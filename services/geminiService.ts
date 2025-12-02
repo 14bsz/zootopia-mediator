@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { UserInput, MediationResult } from "../types";
 
-const GENAI_API_KEY = process.env.API_KEY || '';
+const GENAI_API_KEY = import.meta.env.GEMINI_API_KEY || '';
 
 // Define the response schema for structured output
 const mediationSchema: Schema = {
@@ -40,7 +40,7 @@ const mediationSchema: Schema = {
 
 export const analyzeDispute = async (inputA: UserInput, inputB: UserInput): Promise<MediationResult> => {
   if (!GENAI_API_KEY) {
-    throw new Error("API Key is missing. Please set REACT_APP_GEMINI_API_KEY.");
+    throw new Error("缺少 Gemini API 密钥。请在环境变量中设置 GEMINI_API_KEY。");
   }
 
   const ai = new GoogleGenAI({ apiKey: GENAI_API_KEY });
@@ -58,7 +58,7 @@ export const analyzeDispute = async (inputA: UserInput, inputB: UserInput): Prom
     2) 由尼克进行幽默机智、略带调侃但具建设性的点评；
     3) 给出双方责任百分比，总和必须为 100%；
     4) 分别给出对 A 与 B 的具体改进建议；
-    5) 生成 5 条可执行的和解行动建议，需带动物城风格（例如：爪爪冰棍、树懒、Try Everything 等元素），并确保都是中文短句。
+    5) 生成 5 条可执行的和解行动建议，需带动物城风格（例如：爪爪冰棍、树懒、主题曲元素等），并确保都是中文短句（不得出现英文）。
 
     人设语气：朱迪富有正义感且积极；尼克淡定、风趣、偶尔挖苦但不伤人。
   `;
