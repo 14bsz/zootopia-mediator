@@ -84,7 +84,7 @@ export default function App() {
 
       {/* Header */}
       <header className="fixed top-0 w-full z-50 transition-all duration-300 px-4 pt-4 pointer-events-none">
-        <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur-md rounded-full shadow-sm border border-white/60 px-6 py-3 flex justify-between items-center pointer-events-auto">
+        <div className="max-w-5xl mx-auto px-6 py-3 flex justify-between items-center pointer-events-auto">
           <div 
             className="flex items-center gap-3 cursor-pointer group select-none" 
             onClick={() => setStep(AppStep.ONBOARDING)}
