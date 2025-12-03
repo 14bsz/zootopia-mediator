@@ -16,5 +16,20 @@ export const analyzeDispute = async (inputA: UserInput, inputB: UserInput): Prom
 
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content || "";
-  return JSON.parse(content) as MediationResult;
+  const raw = content.trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+  try {
+    return JSON.parse(raw) as MediationResult;
+  } catch {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      const slice = raw.slice(start, end + 1);
+      return JSON.parse(slice) as MediationResult;
+    }
+    throw new Error("GLM 返回非 JSON 格式");
+  }
 };
