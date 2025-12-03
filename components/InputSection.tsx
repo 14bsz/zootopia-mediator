@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UserInput } from '../types';
-import { UploadCloud, X, Mic, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UploadCloud, X, Mic, MicOff, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface InputSectionProps {
@@ -13,6 +13,61 @@ interface InputSectionProps {
 
 const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, setUserB, onSubmit }) => {
   const [activeTab, setActiveTab] = useState<'A' | 'B'>('A');
+  const [recordingDesc, setRecordingDesc] = useState(false);
+  const [recordingDemand, setRecordingDemand] = useState(false);
+  const recognitionRef = useRef<{ description: any; demand: any }>({ description: null, demand: null });
+
+  const getRecognizer = () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return null;
+    const rec = new SR();
+    rec.lang = 'zh-CN';
+    rec.continuous = true;
+    rec.interimResults = true;
+    return rec;
+  };
+
+  const startDictation = (field: 'description' | 'demand') => {
+    if (recognitionRef.current[field]) return;
+    const rec = getRecognizer();
+    if (!rec) return;
+    recognitionRef.current[field] = rec;
+    if (field === 'description') setRecordingDesc(true); else setRecordingDemand(true);
+    rec.onresult = (e: any) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      setCurrentUser(prev => ({ ...prev, [field]: (prev as any)[field] + transcript }));
+    };
+    rec.onerror = () => {
+      if (field === 'description') setRecordingDesc(false); else setRecordingDemand(false);
+      recognitionRef.current[field] = null;
+    };
+    rec.onend = () => {
+      if (field === 'description') setRecordingDesc(false); else setRecordingDemand(false);
+      recognitionRef.current[field] = null;
+    };
+    try { rec.start(); } catch {}
+  };
+
+  const stopDictation = (field: 'description' | 'demand') => {
+    const rec = recognitionRef.current[field];
+    if (rec) {
+      try { rec.stop(); } catch {}
+    }
+    recognitionRef.current[field] = null;
+    if (field === 'description') setRecordingDesc(false); else setRecordingDemand(false);
+  };
+
+  useEffect(() => {
+    stopDictation('description');
+    stopDictation('demand');
+    return () => {
+      stopDictation('description');
+      stopDictation('demand');
+    };
+  }, [activeTab]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, role: 'A' | 'B') => {
     const file = e.target.files?.[0];
@@ -44,15 +99,20 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
           onClick={() => setActiveTab('A')}
           className={`relative group transition-all duration-500 ${activeTab === 'A' ? 'scale-110 z-10' : 'scale-90 opacity-60 hover:opacity-90 hover:scale-95'}`}
         >
-           <div className={`w-28 h-28 rounded-full border-[6px] shadow-2xl overflow-hidden bg-pink-200 transition-all duration-300 ${activeTab === 'A' ? 'border-pink-500 shadow-pink-300/50 rotate-0' : 'border-white rotate-[-10deg]'}`}>
-              <div className="w-full h-full flex items-center justify-center text-6xl transform group-hover:scale-110 transition-transform duration-500">🐰</div>
+           <div className={`w-28 h-28 rounded-full border-[6px] shadow-2xl overflow-hidden bg-sky-200 transition-all duration-300 ${activeTab === 'A' ? 'border-sky-500 shadow-sky-300/50 rotate-0' : 'border-white rotate-[-10deg]'}`}>
+              <img
+                src="https://i.pinimg.com/736x/6c/e0/17/6ce01715cf6b4944d2d4cd6aaaf6b694.jpg"
+                alt="兔子头像"
+                className={`w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500 ${activeTab !== 'A' ? 'rotate-[10deg]' : ''}`}
+                loading="lazy"
+              />
            </div>
            <motion.div 
              initial={false}
              animate={{ y: activeTab === 'A' ? 0 : 10, opacity: activeTab === 'A' ? 1 : 0 }}
-             className={`absolute -bottom-4 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full text-sm font-black shadow-lg whitespace-nowrap transition-colors ${activeTab === 'A' ? 'bg-pink-500 text-white' : 'bg-white text-gray-400'}`}
+             className={`absolute -bottom-4 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full text-sm font-black shadow-lg whitespace-nowrap transition-colors ${activeTab === 'A' ? 'bg-sky-500 text-white' : 'bg-white text-gray-400'}`}
            >
-             {userA.name || '兔子'}
+             {userA.name || '朱迪'}
            </motion.div>
         </button>
 
@@ -65,21 +125,26 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
           className={`relative group transition-all duration-500 ${activeTab === 'B' ? 'scale-110 z-10' : 'scale-90 opacity-60 hover:opacity-90 hover:scale-95'}`}
         >
            <div className={`w-28 h-28 rounded-full border-[6px] shadow-2xl overflow-hidden bg-orange-200 transition-all duration-300 ${activeTab === 'B' ? 'border-orange-500 shadow-orange-300/50 rotate-0' : 'border-white rotate-[10deg]'}`}>
-              <div className="w-full h-full flex items-center justify-center text-6xl transform group-hover:scale-110 transition-transform duration-500">🦊</div>
+              <img
+                src="https://th.bing.com/th/id/R.12ce8602a7fcb7dbb1e0eea27668b02c?rik=6%2f%2f38gn4%2bWnWvg&pid=ImgRaw&r=0"
+                alt="狐狸头像"
+                className={`w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500 ${activeTab !== 'B' ? 'rotate-[-10deg]' : ''}`}
+                loading="lazy"
+              />
            </div>
            <motion.div 
              initial={false}
              animate={{ y: activeTab === 'B' ? 0 : 10, opacity: activeTab === 'B' ? 1 : 0 }}
              className={`absolute -bottom-4 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full text-sm font-black shadow-lg whitespace-nowrap transition-colors ${activeTab === 'B' ? 'bg-orange-500 text-white' : 'bg-white text-gray-400'}`}
            >
-             {userB.name || '狐狸'}
+             {userB.name || '尼克'}
            </motion.div>
         </button>
       </div>
 
       <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl shadow-blue-900/10 border border-white/60 overflow-hidden relative transform transition-all duration-500">
         {/* Dynamic decorative top border */}
-        <div className={`h-3 w-full transition-colors duration-500 ${activeTab === 'A' ? 'bg-gradient-to-r from-pink-400 to-pink-500' : 'bg-gradient-to-r from-orange-400 to-orange-500'}`}></div>
+        <div className={`h-3 w-full transition-colors duration-500 ${activeTab === 'A' ? 'bg-gradient-to-r from-sky-400 to-sky-500' : 'bg-gradient-to-r from-orange-400 to-orange-500'}`}></div>
 
         <div className="p-6 md:p-10 space-y-8">
           <AnimatePresence mode="wait">
@@ -101,7 +166,7 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
                   value={currentUser.name}
                   onChange={(e) => setCurrentUser(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="我是..."
-                  className={`w-full p-4 text-lg font-bold rounded-2xl border-2 focus:ring-4 focus:ring-opacity-20 transition-all outline-none ${activeTab === 'A' ? 'border-pink-100 focus:border-pink-400 focus:ring-pink-400 bg-pink-50/30 placeholder-pink-300 text-pink-900' : 'border-orange-100 focus:border-orange-400 focus:ring-orange-400 bg-orange-50/30 placeholder-orange-300 text-orange-900'}`}
+                  className={`w-full p-4 text-lg font-bold rounded-2xl border-2 focus:ring-4 focus:ring-opacity-20 transition-all outline-none ${activeTab === 'A' ? 'border-sky-100 focus:border-sky-400 focus:ring-sky-400 bg-sky-50/30 placeholder-sky-300 text-sky-900' : 'border-orange-100 focus:border-orange-400 focus:ring-orange-400 bg-orange-50/30 placeholder-orange-300 text-orange-900'}`}
                 />
               </div>
 
@@ -111,17 +176,29 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
                     <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest ml-1">
                       案件描述 (发生了什么？)
                     </label>
-                    <div className={`relative flex-1 group rounded-3xl p-1 transition-colors duration-300 ${activeTab === 'A' ? 'bg-pink-100 focus-within:bg-pink-300' : 'bg-orange-100 focus-within:bg-orange-300'}`}>
+                 <div className={`relative flex-1 group rounded-3xl p-1 transition-colors duration-300 ${activeTab === 'A' ? 'bg-sky-100 focus-within:bg-sky-300' : 'bg-orange-100 focus-within:bg-orange-300'}`}>
                         <textarea
                           value={currentUser.description}
                           onChange={(e) => setCurrentUser(prev => ({ ...prev, description: e.target.value }))}
                           placeholder="发生了什么争执？请尽可能详细描述..."
                           className="w-full p-6 h-48 rounded-[1.3rem] border-0 focus:ring-0 text-slate-700 leading-relaxed resize-none bg-white placeholder-slate-300 text-lg"
                           maxLength={500}                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const supported = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                            if (!supported) return;
+                            if (recordingDesc) stopDictation('description'); else startDictation('description');
+                          }}
+                          className={`absolute bottom-3 left-5 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'A' ? 'bg-sky-500 text-white hover:bg-sky-600' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
+                        >
+                          {recordingDesc ? <MicOff size={16} /> : <Mic size={16} />}
+                          {recordingDesc ? '停止语音' : '语音输入'}
+                        </button>
                         <div className="absolute bottom-3 right-5 text-xs font-bold text-slate-300 bg-white/80 px-2 py-1 rounded-md backdrop-blur-sm">
                           {currentUser.description.length}/500
                         </div>
-                    </div>
+                 </div>
                  </div>
               </div>
 
@@ -131,7 +208,7 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
                     <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest ml-1">
                       诉求 / 委屈点
                     </label>
-                    <div className={`relative flex-1 rounded-3xl p-1 transition-colors duration-300 ${activeTab === 'A' ? 'bg-pink-100 focus-within:bg-pink-300' : 'bg-orange-100 focus-within:bg-orange-300'}`}>
+                    <div className={`relative flex-1 rounded-3xl p-1 transition-colors duration-300 ${activeTab === 'A' ? 'bg-sky-100 focus-within:bg-sky-300' : 'bg-orange-100 focus-within:bg-orange-300'}`}>
                         <div className="bg-white rounded-[1.3rem] h-full overflow-hidden">
                             <textarea
                               value={currentUser.demand}
@@ -139,6 +216,20 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
                               placeholder="你希望对方怎么做？"
                               className="w-full p-5 h-32 border-0 focus:ring-0 text-slate-700 leading-relaxed resize-none bg-transparent placeholder-slate-300"
                             />
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const supported = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                                  if (!supported) return;
+                                  if (recordingDemand) stopDictation('demand'); else startDictation('demand');
+                                }}
+                                className={`absolute bottom-3 left-5 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'A' ? 'bg-sky-500 text-white hover:bg-sky-600' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
+                              >
+                                {recordingDemand ? <MicOff size={16} /> : <Mic size={16} />}
+                                {recordingDemand ? '停止语音' : '语音输入'}
+                              </button>
+                            </div>
                         </div>
                     </div>
                   </div>
@@ -150,8 +241,8 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
                     </label>
                     <div className="relative h-full min-h-[8rem]">
                         {!currentUser.imageBase64 ? (
-                          <label className={`flex flex-col items-center justify-center w-full h-32 rounded-3xl border-2 border-dashed cursor-pointer hover:bg-slate-50 transition-all group ${activeTab === 'A' ? 'border-pink-200 hover:border-pink-400' : 'border-orange-200 hover:border-orange-400'}`}>
-                            <div className={`p-3 rounded-full mb-2 transition-transform group-hover:scale-110 ${activeTab === 'A' ? 'bg-pink-100 text-pink-500' : 'bg-orange-100 text-orange-500'}`}>
+                          <label className={`flex flex-col items-center justify-center w-full h-32 rounded-3xl border-2 border-dashed cursor-pointer hover:bg-slate-50 transition-all group ${activeTab === 'A' ? 'border-sky-200 hover:border-sky-400' : 'border-orange-200 hover:border-orange-400'}`}>
+                            <div className={`p-3 rounded-full mb-2 transition-transform group-hover:scale-110 ${activeTab === 'A' ? 'bg-sky-100 text-sky-500' : 'bg-orange-100 text-orange-500'}`}>
                                <UploadCloud size={24} />
                             </div>
                             <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600">点击上传证据图片</span>
@@ -184,12 +275,12 @@ const InputSection: React.FC<InputSectionProps> = ({ userA, userB, setUserA, set
           </AnimatePresence>
 
           {/* Prompt Bubble */}
-          <div className={`mt-8 flex items-start gap-5 p-6 rounded-3xl border-2 transition-colors duration-500 ${activeTab === 'A' ? 'bg-pink-50/50 border-pink-100' : 'bg-orange-50/50 border-orange-100'}`}>
+          <div className={`mt-8 flex items-start gap-5 p-6 rounded-3xl border-2 transition-colors duration-500 ${activeTab === 'A' ? 'bg-sky-50/50 border-sky-100' : 'bg-orange-50/50 border-orange-100'}`}>
              <div className="bg-white p-2 rounded-2xl shadow-sm shrink-0 text-3xl rotate-[-5deg]">
-                {activeTab === 'A' ? '👮‍♀️' : '🦊'}
+                {activeTab === 'A' ? '🐰' : '🦊'}
              </div>
              <div>
-                <p className={`text-sm font-black mb-1 uppercase tracking-wide ${activeTab === 'A' ? 'text-pink-700' : 'text-orange-700'}`}>
+                <p className={`text-sm font-black mb-1 uppercase tracking-wide ${activeTab === 'A' ? 'text-sky-700' : 'text-orange-700'}`}>
                    {activeTab === 'A' ? '朱迪警官提示：' : '尼克提示：'}
                 </p>
                 <p className="text-slate-600 leading-relaxed font-medium italic">
