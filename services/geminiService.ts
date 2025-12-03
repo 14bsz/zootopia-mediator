@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { UserInput, MediationResult } from "../types";
 
-const GENAI_API_KEY = import.meta.env.GEMINI_API_KEY || '';
+const GENAI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 // Define the response schema for structured output
 const mediationSchema: Schema = {
