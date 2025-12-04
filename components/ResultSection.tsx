@@ -148,7 +148,6 @@ const ResultSection: React.FC<ResultSectionProps> = ({ result, userA, userB, onR
            <div className="mt-8 text-right">
               <h4 className="font-black text-2xl text-orange-900 mb-4">尼克的锐评</h4>
               <div className="bg-orange-50/50 p-6 rounded-2xl border border-orange-100 text-orange-900/80 leading-relaxed font-medium text-left relative">
-                 <div className="mb-3 text-sm font-bold text-orange-700 text-right">判定：主要责任在 {majorName}（{majorPct}%），次要责任在 {minorName}（{minorPct}%）</div>
                  <span className="absolute -top-3 -left-2 text-4xl text-orange-200">“</span>
                  {result.nickComment}
                  <span className="absolute -bottom-6 -right-2 text-4xl text-orange-200 rotate-180">“</span>
